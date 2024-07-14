@@ -2,6 +2,7 @@ import { config } from "dotenv";
 import { Hono } from "hono";
 import { logger } from "hono/logger";
 import { endTime, setMetric, startTime, timing } from "hono/timing";
+import { submitQuestionGeneralGPT } from "./libraries/azureHelpers";
 
 // Load environment variables
 config({ path: "/etc/gptbot/.env" });
@@ -26,14 +27,14 @@ const summaryPrompt = `
     Topics allowed are health, diet, substance abuse, mental health, and mental illness.
 `;
 
-const drupalUrl = process.env.DRUPAL_BASE_URL;
-const azBaseUrl = process.env.AZ_BASE_URL;
-const azApiKey = process.env.AZ_API_KEY;
-const azSearchUrl = process.env.AZ_SEARCH_URL;
-const azSearchKey = process.env.AZ_SEARCH_KEY;
-const azIndexName = process.env.AZ_INDEX_NAME;
-const azPMIndexName = process.env.AZ_PM_INDEX_NAME;
-const azAnswersIndexName = "vet";
+const drupalUrl: string | undefined = process.env.DRUPAL_BASE_URL;
+const azBaseUrl: string | undefined = process.env.AZ_BASE_URL;
+const azApiKey: string | undefined = process.env.AZ_API_KEY;
+const azSearchUrl: string | undefined = process.env.AZ_SEARCH_URL;
+const azSearchKey: string | undefined = process.env.AZ_SEARCH_KEY;
+const azIndexName: string | undefined = process.env.AZ_INDEX_NAME;
+const azPMIndexName: string | undefined = process.env.AZ_PM_INDEX_NAME;
+const azAnswersIndexName: string | undefined = "vet";
 
 const uname = process.env.DRUPAL_USERNAME;
 const pword = process.env.DRUPAL_PASSWORD;
@@ -49,10 +50,17 @@ app.get("/", (c) => {
   `);
 });
 
-app.get("/api/similar", async (c) => {
-  const { q } = c.req.query();
-  if (!q) {
-    return c.json({ error: "Missing query parameter 'q'" });
+app.post("/api/test/simple", async (c) => {
+  setMetric(c, "region", "us-east-1");
+  startTime(c, "simple");
+  const body = await c.req.json();
+  if (!body) {
+    return c.json({ error: "Missing query parameter 'question'" });
+  } else {
+    let question = body.question;
+    let answer = await submitQuestionGeneralGPT(question, summaryPrompt);
+    endTime(c, "simple");
+    return c.json(answer);
   }
 });
 
