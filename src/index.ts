@@ -2,7 +2,10 @@ import { config } from "dotenv";
 import { Hono } from "hono";
 import { logger } from "hono/logger";
 import { endTime, setMetric, startTime, timing } from "hono/timing";
-import { submitQuestionGeneralGPT } from "./libraries/azureHelpers";
+import {
+  submitQuestionDocuments,
+  submitQuestionGeneralGPT,
+} from "./libraries/azureHelpers";
 
 // Load environment variables
 config({ path: "/etc/gptbot/.env" });
@@ -60,6 +63,20 @@ app.post("/api/test/simple", async (c) => {
     let question = body.question;
     let answer = await submitQuestionGeneralGPT(question, summaryPrompt);
     endTime(c, "simple");
+    return c.json(answer);
+  }
+});
+
+app.post("/api/test/docsquery", async (c) => {
+  setMetric(c, "region", "us-east-1");
+  startTime(c, "docsquery");
+  const body = await c.req.json();
+  if (!body) {
+    return c.json({ error: "Missing query parameter 'question'" });
+  } else {
+    let question = body.question;
+    let answer = await submitQuestionDocuments(question, summaryPrompt);
+    endTime(c, "docsquery");
     return c.json(answer);
   }
 });

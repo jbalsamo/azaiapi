@@ -1,6 +1,9 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import { config } from "dotenv";
-import { submitQuestionGeneralGPT } from "../src/libraries/azureHelpers.ts";
+import {
+  submitQuestionDocuments,
+  submitQuestionGeneralGPT,
+} from "../src/libraries/azureHelpers.ts";
 
 var configResult: any;
 
@@ -58,6 +61,25 @@ describe("test doing a direct query", () => {
   test("Doesn't return an error", async () => {
     expect(
       await submitQuestionGeneralGPT(question, questionPrompt)
+    ).toHaveProperty("status");
+  });
+});
+
+describe("test doing a document query", () => {
+  beforeAll(() => {
+    configResult = config({ path: "/etc/gptbot/.env" });
+  });
+  test("Returns an answer", async () => {
+    expect(
+      await submitQuestionDocuments(question, questionPrompt)
+    ).toHaveProperty("choices");
+    expect(
+      await submitQuestionDocuments(question, questionPrompt)
+    ).toHaveProperty("status", 200);
+  });
+  test("Doesn't return an error", async () => {
+    expect(
+      await submitQuestionDocuments(question, questionPrompt)
     ).toHaveProperty("status");
   });
 });
